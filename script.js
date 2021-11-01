@@ -1,6 +1,7 @@
 var apiKey = "a4dfbbd7b97d4fbccabf92c4fedca3b3";
 var formEl = $("#city-form");
 var cityEl = $('input[name="city-name"]');
+var cityAndDateEl = document.querySelector("#cityAndDate");
 var currentCityEl = document.querySelector("#currentTemp");
 var currentTempEl = document.querySelector("#currentTemp");
 var currentWindEl = document.querySelector("#currentWind");
@@ -18,7 +19,7 @@ function handleSubmit(event) {
   getApi();
 }
 
-// Save city locally, add to list
+// Save city locally
 function saveCity() {
   var key = cityEl.val();
   localStorage.setItem(key, JSON.stringify(key));
@@ -45,10 +46,12 @@ function getApi(requestUrl) {
       return respose.json();
     })
     .then(function (data) {
-      // console.log(data);
       cityLatitude = data.coord.lat;
       cityLongitude = data.coord.lon;
       getForecast(cityLatitude, cityLongitude);
+    })
+    .catch(function (error) {
+      alert("Invalid");
     });
 
   // 2nd call with lat + long
@@ -66,7 +69,7 @@ function getApi(requestUrl) {
         return response.json();
       })
       .then(function (data) {
-        // console.log(data);
+        console.log(data);
         showWeatherForecast(data);
       });
   }
@@ -79,25 +82,32 @@ function showWeatherForecast(data) {
   var cityHumidity = data.current.humidity;
   var currentUVI = data.current.uvi;
   // update current city info
+  cityAndDateEl.textContent = cityEl.val() + " " + dayjs().format("(MM/DD/YYYY)");
   currentTempEl.textContent = "Temp: " + cityTemp + " F";
   currentWindEl.textContent = "Wind: " + cityWindSpeed + " MPH";
   currentHumidityEl.textContent = "Humidity: " + cityHumidity + "%";
   currentUV_El.textContent = "UV Index: " + currentUVI;
+  // Delete 5 day forecast before adding new
+  // $(".container")
+  // 5 day forecast update to cards
+  for (var i = 0; i < 5; i++) {
+    $(".container").append(`<div class="card">
+    <div class="card-body">
+      <h5 class="card-title">${dayjs().add(i, "day").format("MM/DD/YYYY")}</h5>
+      <ul class="list-group">
+        <li class="list-group-item"> <img src="https://openweathermap.org/img/wn/${
+          data.daily[i].weather[0].icon
+        }.png"/></li>
+        <li class="list-group-item">Temp: ${data.daily[i].temp.day}F</li>
+        <li class="list-group-item">Wind: ${data.daily[i].wind_speed} MPH</li>
+        <li class="list-group-item">Humidity: ${data.daily[i].humidity}%</li>
+        <li class="list-group-item"></li>
+      </ul>
+    </div>
+  </div>`);
+  }
 }
-
-//   for (var i = 0; i < 5; i++) {
-//     $(".createForecast").append(`<div class="card">
-//   <div class="card-body">
-//     <h5 class="card-title">03/31/2021</h5>
-//     <ul class="list-group">
-//       <li class="list-group-item">Temp</li>
-//       <li class="list-group-item">Temp</li>
-//       <li class="list-group-item">Temp</li>
-//       <li class="list-group-item">Temp</li>
-//     </ul>
-//   </div>
-// </div>`);
-//   }
 
 // submit event
 formEl.on("submit", handleSubmit);
+showCityHistory();
