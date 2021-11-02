@@ -14,7 +14,7 @@ var cardHumidity = document.querySelector("#cardHumidity");
 
 function handleSubmit(event) {
   event.preventDefault();
-  showCityHistory();
+  clearFields();
   saveCity();
   getApi();
 }
@@ -22,19 +22,28 @@ function handleSubmit(event) {
 // Save city locally
 function saveCity() {
   var key = cityEl.val();
-  localStorage.setItem(key, JSON.stringify(key));
+  if (key !== "") {
+    localStorage.setItem(key, JSON.stringify(key));
+    $("#citySearchList").append(
+      $("<li class= list-group-item><button class= btn-secondary>" + key + "</button></li>")
+    );
+  }
 }
 
 // Render city search history
 function showCityHistory() {
   for (var i = 0; i < localStorage.length; i++) {
-    var cityKey = localStorage.key(i);
-    $("#citySearchList").append($("<li class= list-group-item>" + cityKey + "</li>"));
+    if (localStorage.length > 0) {
+      var cityKey = localStorage.key(i);
+      $("#citySearchList").append(
+        $("<li class= list-group-item><button class= btn-secondary>" + cityKey + "</button></li>")
+      );
+    }
   }
 }
 
 // Get Weather
-function getApi(requestUrl) {
+function getApi() {
   var requestUrl =
     "https://api.openweathermap.org/data/2.5/weather?q=" +
     cityEl.val() +
@@ -53,26 +62,25 @@ function getApi(requestUrl) {
     .catch(function (error) {
       alert("Invalid");
     });
-
-  // 2nd call with lat + long
-  function getForecast(cityLatitude, cityLongitude) {
-    fetch(
-      "https://api.openweathermap.org/data/2.5/onecall?lat=" +
-        cityLatitude +
-        "&lon=" +
-        cityLongitude +
-        "&appid=" +
-        apiKey +
-        "&units=imperial"
-    )
-      .then(function (response) {
-        return response.json();
-      })
-      .then(function (data) {
-        console.log(data);
-        showWeatherForecast(data);
-      });
-  }
+}
+// 2nd call with lat + long
+function getForecast(cityLatitude, cityLongitude) {
+  fetch(
+    "https://api.openweathermap.org/data/2.5/onecall?lat=" +
+      cityLatitude +
+      "&lon=" +
+      cityLongitude +
+      "&appid=" +
+      apiKey +
+      "&units=imperial"
+  )
+    .then(function (response) {
+      return response.json();
+    })
+    .then(function (data) {
+      console.log(data);
+      showWeatherForecast(data);
+    });
 }
 
 // get data from API and update page
@@ -81,17 +89,24 @@ function showWeatherForecast(data) {
   var cityWindSpeed = data.current.wind_speed;
   var cityHumidity = data.current.humidity;
   var currentUVI = data.current.uvi;
+  // determine UV index severity
+  if (currentUVI <= 2) {
+    $("#currentUV").addClass("p-3 mb-2 bg-success");
+  } else if (currentUVI > 2 && currentUVI <= 5) {
+    $("#currentUV").addClass("p-3 mb-2 bg-warning");
+  } else if (currentUVI > 5) {
+    $("#currentUV").addClass("p-3 mb-2 bg-danger");
+  }
   // update current city info
   cityAndDateEl.textContent = cityEl.val() + " " + dayjs().format("(MM/DD/YYYY)");
   currentTempEl.textContent = "Temp: " + cityTemp + " F";
   currentWindEl.textContent = "Wind: " + cityWindSpeed + " MPH";
   currentHumidityEl.textContent = "Humidity: " + cityHumidity + "%";
   currentUV_El.textContent = "UV Index: " + currentUVI;
-  // Delete 5 day forecast before adding new
-  // $(".container")
+
   // 5 day forecast update to cards
   for (var i = 0; i < 5; i++) {
-    $(".container").append(`<div class="card">
+    $(".container").append(`<div class="col-lg-2"> <div class="card">
     <div class="card-body">
       <h5 class="card-title">${dayjs().add(i, "day").format("MM/DD/YYYY")}</h5>
       <ul class="list-group">
@@ -104,10 +119,40 @@ function showWeatherForecast(data) {
         <li class="list-group-item"></li>
       </ul>
     </div>
+    </div>
   </div>`);
   }
+  cityEl.val("");
 }
 
+// removes 5 day forecast
+function clearFields() {
+  $(".container").empty();
+  $("#currentUV").removeClass("p-3 mb-2 bg-danger bg-warning bg-success");
+}
+
+showCityHistory();
 // submit event
 formEl.on("submit", handleSubmit);
-showCityHistory();
+// local storage button list event
+$("#citySearchList").on("click", function (event) {
+  // click submit with empty field
+  if (event.target.textContent === "Submit" && cityEl.val() === "") {
+    console.log("submit without field");
+    // click submit with field
+  } else if (event.target.textContent === "Submit" && cityEl.val() !== "") {
+    console.log("submit with field");
+    // input field clicked, ignore event
+  } else if (event.target.textContent === cityEl.val()) {
+    console.log("empty input field clicked");
+  }
+  // current city info clicked
+  // else if (event.target)
+  // saved city button clicked
+  else {
+    console.log("saved button");
+    cityEl.val(event.target.textContent);
+    clearFields();
+    getApi();
+  }
+});
