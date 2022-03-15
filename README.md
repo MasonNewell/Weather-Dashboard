@@ -2,7 +2,7 @@
 
 App that uses OpenWeather API to retrieve weather data for cities. Uses local storage for data.
 
-# LINK
+# Link
 
 https://masonnewell.github.io/Weather-Dashboard/
 
